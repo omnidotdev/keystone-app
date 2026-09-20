@@ -5,8 +5,9 @@ export const Route = createFileRoute("/build")({
   component: BuildPage,
 });
 
-/** Keystone API base. Dev server uses a locally-trusted cert */
-const API_BASE = "https://localhost:4000";
+/** Keystone API base. Dev uses a locally-trusted cert; prod is the deployed API */
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ?? "https://localhost:4000";
 
 interface Page {
   html: string;
