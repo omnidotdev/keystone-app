@@ -1,7 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouteContext } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
+import authClient from "@/lib/auth/authClient";
+import { getUserOrganizations } from "@/server/functions/auth";
 import { publishSite } from "@/server/functions/publish";
+
+interface Workspace {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+interface DnsRecord {
+  name: string;
+  recordType: string;
+  value: string;
+  purpose: string;
+}
 
 export const Route = createFileRoute("/build")({
   component: BuildPage,
@@ -70,6 +85,11 @@ function BuildPage() {
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [publishedHosted, setPublishedHosted] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [pubOpen, setPubOpen] = useState(false);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [selectedOrg, setSelectedOrg] = useState<string>("");
+  const [customDomain, setCustomDomain] = useState("");
+  const [dnsRecords, setDnsRecords] = useState<DnsRecord[]>([]);
   const [dsMode, setDsMode] = useState<"freeform" | "themed" | "design-system">(
     "freeform",
   );
@@ -78,6 +98,34 @@ function BuildPage() {
   const [dsSaving, setDsSaving] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+
+  const { auth } = useRouteContext({ strict: false });
+  const loggedIn = Boolean(auth);
+
+  // Load the signed-in user's workspaces for the publish target picker.
+  useEffect(() => {
+    if (!loggedIn) return;
+
+    getUserOrganizations()
+      .then((orgs) => {
+        const list = orgs.map((o) => ({
+          id: o.id,
+          slug: o.slug,
+          name: o.name,
+        }));
+        setWorkspaces(list);
+        setSelectedOrg((prev) => prev || list[0]?.id || "");
+      })
+      .catch(() => {});
+  }, [loggedIn]);
+
+  const signIn = () =>
+    authClient.signIn.social({
+      provider: "omni",
+      callbackURL:
+        typeof window !== "undefined" ? window.location.pathname : "/build",
+      disableRedirect: false,
+    });
 
   useEffect(() => {
     fetch(`${API_BASE}/sites`, {
@@ -161,9 +209,16 @@ function BuildPage() {
     try {
       // Server function: forwards the signed-in user's session so an entitled
       // workspace gets a hosted deploy; otherwise a read-only preview.
-      const data = await publishSite({ data: { siteId } });
+      const data = await publishSite({
+        data: {
+          siteId,
+          ...(selectedOrg ? { organizationId: selectedOrg } : {}),
+          ...(customDomain.trim() ? { customDomain: customDomain.trim() } : {}),
+        },
+      });
       setPublishedUrl(data.url);
       setPublishedHosted(data.hosted);
+      setDnsRecords(data.customDomainRecords ?? []);
     } catch {
       setError("Publish failed. Please try again.");
     } finally {
@@ -266,7 +321,7 @@ function BuildPage() {
           <button
             type="button"
             className="rounded-md bg-primary-600 px-4 py-2 font-semibold text-primary-foreground text-sm transition-colors hover:bg-primary-700 disabled:opacity-40"
-            onClick={publish}
+            onClick={() => setPubOpen(true)}
             disabled={!files || publishing}
           >
             {publishing
@@ -462,6 +517,168 @@ function BuildPage() {
                       : "Remove"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pubOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Publish"
+        >
+          <div className="w-full max-w-lg rounded-xl border border-base-200 bg-card p-6 shadow-2xl">
+            <h2 className="font-display font-medium text-xl tracking-tight">
+              Publish your site
+            </h2>
+
+            {!loggedIn ? (
+              <>
+                <p className="mt-1.5 text-muted-foreground text-sm leading-relaxed">
+                  Publish a live, hosted site on your own domain with an Omni
+                  account. Without one, you can still share a read-only preview
+                  link.
+                </p>
+                <div className="mt-5 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    className="rounded-md bg-primary-600 px-4 py-2.5 font-semibold text-primary-foreground text-sm transition-colors hover:bg-primary-700"
+                    onClick={signIn}
+                  >
+                    Sign in to publish a live site
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-base-200 px-4 py-2.5 font-medium text-sm transition-colors hover:bg-base-100 disabled:opacity-40"
+                    onClick={publish}
+                    disabled={publishing}
+                  >
+                    {publishing ? "Publishing..." : "Share a preview link"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-1.5 text-muted-foreground text-sm leading-relaxed">
+                  Deploy a live, hosted site that scales to zero when idle. Live
+                  hosting and custom domains are available on paid workspaces;
+                  other sites publish as a preview link.
+                </p>
+                <div className="mt-4 flex flex-col gap-3">
+                  {workspaces.length > 1 && (
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="font-medium">Workspace</span>
+                      <select
+                        className="rounded-md border border-base-200 bg-background px-3 py-2 text-sm outline-none focus:border-primary-500"
+                        value={selectedOrg}
+                        onChange={(e) => setSelectedOrg(e.target.value)}
+                      >
+                        {workspaces.map((w) => (
+                          <option key={w.id} value={w.id}>
+                            {w.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-medium">
+                      Custom domain{" "}
+                      <span className="text-muted-foreground">(optional)</span>
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="url"
+                      autoComplete="off"
+                      placeholder="www.example.com"
+                      className="rounded-md border border-base-200 bg-background px-3 py-2 text-sm outline-none focus:border-primary-500"
+                      value={customDomain}
+                      onChange={(e) => setCustomDomain(e.target.value)}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="rounded-md bg-primary-600 px-4 py-2.5 font-semibold text-primary-foreground text-sm transition-colors hover:bg-primary-700 disabled:opacity-40"
+                    onClick={publish}
+                    disabled={publishing}
+                  >
+                    {publishing
+                      ? "Publishing..."
+                      : publishedUrl
+                        ? "Republish"
+                        : "Publish"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {publishedUrl && (
+              <div className="mt-5 rounded-lg border border-base-200 bg-base-100 p-4">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`h-2 w-2 rounded-full ${publishedHosted ? "bg-green-500" : "bg-amber-400"}`}
+                  />
+                  <span className="font-medium text-sm">
+                    {publishedHosted ? "Live site" : "Preview link"}
+                  </span>
+                </div>
+                <a
+                  href={publishedUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1.5 block break-all font-medium text-primary-700 text-sm hover:underline"
+                >
+                  {publishedUrl.replace(/^https?:\/\//, "")}
+                </a>
+                {!publishedHosted && loggedIn && (
+                  <p className="mt-2 text-muted-foreground text-xs leading-relaxed">
+                    This is a preview. Upgrade this workspace to a paid plan for
+                    a live hosted site and custom domains.
+                  </p>
+                )}
+                {dnsRecords.length > 0 && (
+                  <div className="mt-3">
+                    <p className="font-medium text-xs">
+                      Add these DNS records at your registrar:
+                    </p>
+                    <div className="mt-1.5 overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="text-muted-foreground">
+                          <tr>
+                            <th className="py-1 pr-3 font-medium">Type</th>
+                            <th className="py-1 pr-3 font-medium">Name</th>
+                            <th className="py-1 font-medium">Value</th>
+                          </tr>
+                        </thead>
+                        <tbody className="font-mono">
+                          {dnsRecords.map((r) => (
+                            <tr
+                              key={`${r.recordType}-${r.name}`}
+                              className="border-base-200 border-t"
+                            >
+                              <td className="py-1 pr-3">{r.recordType}</td>
+                              <td className="break-all py-1 pr-3">{r.name}</td>
+                              <td className="break-all py-1">{r.value}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                className="rounded-md px-3 py-2 text-sm transition-colors hover:bg-base-100"
+                onClick={() => setPubOpen(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

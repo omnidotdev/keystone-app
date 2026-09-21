@@ -32,6 +32,8 @@ export interface PublishResult {
 const publishSchema = z.object({
   siteId: z.string().min(1),
   customDomain: z.string().optional(),
+  // Chosen workspace to publish under; defaults to the user's first when unset.
+  organizationId: z.string().optional(),
 });
 
 export const publishSite = createServerFn({ method: "POST" })
@@ -40,11 +42,11 @@ export const publishSite = createServerFn({ method: "POST" })
     const { session } = await fetchSession();
     const accessToken = session?.accessToken;
 
-    // Target workspace: the user's first org claim (personal-as-special-org
-    // guarantees at least one). The repo is owned by, and entitlement checked
-    // against, this workspace. A multi-workspace picker is a later refinement.
+    // Target workspace: the one the user chose, else their first org claim
+    // (personal-as-special-org guarantees at least one). Only the user's own
+    // workspaces are eligible, so an unknown id falls back to the first.
     const orgs = accessToken ? await getUserOrganizations() : [];
-    const workspace = orgs[0];
+    const workspace = orgs.find((o) => o.id === data.organizationId) ?? orgs[0];
 
     const res = await fetch(`${apiBase()}/publish`, {
       method: "POST",
