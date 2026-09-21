@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
+import { publishSite } from "@/server/functions/publish";
+
 export const Route = createFileRoute("/build")({
   component: BuildPage,
 });
@@ -66,6 +68,7 @@ function BuildPage() {
   const [error, setError] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishedHosted, setPublishedHosted] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [dsMode, setDsMode] = useState<"freeform" | "themed" | "design-system">(
     "freeform",
@@ -156,18 +159,13 @@ function BuildPage() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_BASE}/publish`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ siteId }),
-      });
-
-      if (!res.ok) throw new Error("publish failed");
-
-      const data = await res.json();
+      // Server function: forwards the signed-in user's session so an entitled
+      // workspace gets a hosted deploy; otherwise a read-only preview.
+      const data = await publishSite({ data: { siteId } });
       setPublishedUrl(data.url);
+      setPublishedHosted(data.hosted);
     } catch {
-      setError("Publish failed. Check the API server.");
+      setError("Publish failed. Please try again.");
     } finally {
       setPublishing(false);
     }
@@ -378,16 +376,13 @@ function BuildPage() {
                 <span className="h-3 w-3 rounded-full bg-green-300" />
               </div>
               <div className="flex-1 truncate rounded-full border border-base-200 bg-card px-3.5 py-1 text-muted-foreground text-xs">
-                <span
-                  className={
-                    publishedUrl
-                      ? "font-medium text-primary-700"
-                      : "font-medium text-foreground"
-                  }
-                >
-                  {publishedUrl ? "published" : "draft"}
-                </span>
-                .keystone.omni.dev
+                {publishedUrl ? (
+                  <span className="font-medium text-primary-700">
+                    {publishedUrl.replace(/^https?:\/\//, "")}
+                  </span>
+                ) : (
+                  <span className="font-medium text-foreground">draft</span>
+                )}
               </div>
               {publishedUrl && (
                 <a
@@ -396,7 +391,7 @@ function BuildPage() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  View live →
+                  {publishedHosted ? "View live site →" : "View preview →"}
                 </a>
               )}
             </div>
