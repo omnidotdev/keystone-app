@@ -6,8 +6,7 @@ export const Route = createFileRoute("/build")({
 });
 
 /** Keystone API base. Dev uses a locally-trusted cert; prod is the deployed API */
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ?? "https://localhost:4000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "https://localhost:4000";
 
 interface Page {
   html: string;
@@ -68,6 +67,12 @@ function BuildPage() {
   const [credits, setCredits] = useState<number | null>(null);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [dsMode, setDsMode] = useState<"freeform" | "themed" | "design-system">(
+    "freeform",
+  );
+  const [dsOpen, setDsOpen] = useState(false);
+  const [dsTokens, setDsTokens] = useState("");
+  const [dsSaving, setDsSaving] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
 
@@ -134,6 +139,7 @@ function BuildPage() {
         r.json(),
       );
       setFiles(site.files);
+      if (site.mode) setDsMode(site.mode);
     } catch {
       setError(
         "Generation failed. Check the API server and your Anthropic credits.",
@@ -164,6 +170,36 @@ function BuildPage() {
       setError("Publish failed. Check the API server.");
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const applyDesignSystem = async () => {
+    if (!siteId || dsSaving) return;
+
+    setDsSaving(true);
+    setError(null);
+
+    try {
+      const body = dsTokens.trim()
+        ? { tokens: dsTokens.trim() }
+        : { detach: true };
+      const res = await fetch(`${API_BASE}/sites/${siteId}/design-system`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error ?? "Invalid design system");
+
+      setDsMode(data.mode);
+      setDsOpen(false);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Could not apply the design system.",
+      );
+    } finally {
+      setDsSaving(false);
     }
   };
 
@@ -216,6 +252,19 @@ function BuildPage() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            className="rounded-md border border-base-200 bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary-500 disabled:opacity-40"
+            onClick={() => setDsOpen(true)}
+            disabled={!siteId}
+            title="Ground generation in a design system"
+          >
+            {dsMode === "design-system"
+              ? "Design system ✓"
+              : dsMode === "themed"
+                ? "Themed ✓"
+                : "Design system"}
+          </button>
           <button
             type="button"
             className="rounded-md bg-primary-600 px-4 py-2 font-semibold text-primary-foreground text-sm transition-colors hover:bg-primary-700 disabled:opacity-40"
@@ -360,6 +409,68 @@ function BuildPage() {
           </div>
         </main>
       </div>
+
+      {dsOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Design system"
+        >
+          <div className="w-full max-w-lg rounded-xl border border-base-200 bg-card p-6 shadow-2xl">
+            <h2 className="font-display font-medium text-xl tracking-tight">
+              Ground in a design system
+            </h2>
+            <p className="mt-1.5 text-muted-foreground text-sm">
+              Paste W3C design tokens (DTCG) to theme every generation in your
+              brand.{" "}
+              <a
+                href="https://aura.omni.dev"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary-700 hover:underline"
+              >
+                Design and export them in Aura ↗
+              </a>
+            </p>
+            <textarea
+              className="mt-4 h-48 w-full resize-none rounded-md border border-base-200 bg-background p-3 font-mono text-xs outline-none focus:border-primary-500"
+              placeholder={
+                '{\n  "color": {\n    "brand": { "$type": "color", "$value": "#b0781c" }\n  }\n}'
+              }
+              value={dsTokens}
+              onChange={(e) => setDsTokens(e.target.value)}
+              aria-label="Design tokens (DTCG JSON)"
+            />
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-muted-foreground text-xs">
+                Current mode: {dsMode}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-md px-3 py-2 text-sm transition-colors hover:bg-base-100"
+                  onClick={() => setDsOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md bg-primary-600 px-4 py-2 font-semibold text-primary-foreground text-sm transition-colors hover:bg-primary-700 disabled:opacity-40"
+                  onClick={applyDesignSystem}
+                  disabled={dsSaving}
+                >
+                  {dsSaving
+                    ? "Applying..."
+                    : dsTokens.trim()
+                      ? "Apply"
+                      : "Remove"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
