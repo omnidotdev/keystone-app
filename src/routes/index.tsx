@@ -44,35 +44,49 @@ const FEATURES = [
   },
 ];
 
+// `soon` mirrors the omni-api catalog: products not yet launched (status
+// coming_soon, or not yet public) render greyed with a "Coming soon" badge.
 const ECOSYSTEM = [
   {
     icon: "😇",
     name: "Halo",
+    url: "https://halo.omni.dev",
+    soon: true,
     body: "Sell physical and digital products with real buy buttons and checkout, right on the page.",
   },
   {
     icon: "💎",
     name: "Crystal",
+    url: "https://crystal.omni.dev",
+    soon: true,
     body: "Take tips, memberships, and funding goals so supporters can back you without leaving your site.",
   },
   {
     icon: "🕊️",
     name: "Herald",
+    url: "https://herald.omni.dev",
+    soon: false,
     body: "Capture emails and grow an audience with newsletter and contact blocks that actually deliver.",
   },
   {
     icon: "🌲",
     name: "Arbor",
+    url: "https://arbor.omni.dev",
+    soon: true,
     body: "Showcase your open-source repositories for developer portfolios and project pages.",
   },
   {
     icon: "🖍️",
     name: "Aura",
+    url: "https://aura.omni.dev",
+    soon: true,
     body: "Import your design tokens so every generated page matches your brand, not a generic template.",
   },
   {
     icon: "🔷",
     name: "Fractal",
+    url: "https://fractal.omni.dev",
+    soon: false,
     body: "Ship to fast, secure hosting with custom domains, built on Omni's own deploy platform.",
   },
 ];
@@ -167,9 +181,14 @@ function LandingPage() {
           </div>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {ECOSYSTEM.map((e) => (
-              <div
+              <a
                 key={e.name}
-                className="rounded-2xl border border-base-200 bg-card p-6"
+                href={e.url}
+                target="_blank"
+                rel="noreferrer"
+                className={`block rounded-2xl border border-base-200 bg-card p-6 transition-colors hover:border-primary-400 ${
+                  e.soon ? "opacity-70" : ""
+                }`}
               >
                 <div className="flex items-center gap-2.5">
                   <span className="text-2xl" aria-hidden="true">
@@ -178,11 +197,16 @@ function LandingPage() {
                   <h3 className="font-display font-medium text-lg tracking-tight">
                     {e.name}
                   </h3>
+                  {e.soon && (
+                    <span className="ml-auto rounded-full border border-base-200 bg-base-100 px-2 py-0.5 font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
+                      Coming soon
+                    </span>
+                  )}
                 </div>
                 <p className="mt-2.5 text-muted-foreground text-sm leading-relaxed">
                   {e.body}
                 </p>
-              </div>
+              </a>
             ))}
           </div>
         </section>
