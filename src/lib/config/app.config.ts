@@ -2,14 +2,13 @@
  * Application configuration.
  */
 const app = {
-  name: "Omni TanStack Start Template",
+  name: "Keystone",
   // Product symbol, mirrors the omni-api catalog SSOT (`catalog/products.ts`
   // `icon`). Used in the "Made with <symbol> by Omni" footer credit
-  // ! TODO: replace with this product's catalog symbol when the template is used
-  icon: "🧩",
-  description: "Tanstack Start template. Designed and maintained by Omni.",
-  // ! TODO: replace with application url when this template is used.
-  url: "https://template-start.omni.dev",
+  icon: "🗝️",
+  description:
+    "The Omni AI web builder. Describe a website and get one that ships, optionally grounded in your design system.",
+  url: "https://keystone.omni.dev",
   docsUrl: "https://docs.omni.dev",
   socials: {
     discord: "https://discord.gg/omnidotdev",
