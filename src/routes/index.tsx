@@ -44,6 +44,39 @@ const FEATURES = [
   },
 ];
 
+const ECOSYSTEM = [
+  {
+    icon: "😇",
+    name: "Halo",
+    body: "Sell physical and digital products with real buy buttons and checkout, right on the page.",
+  },
+  {
+    icon: "💎",
+    name: "Crystal",
+    body: "Take tips, memberships, and funding goals so supporters can back you without leaving your site.",
+  },
+  {
+    icon: "🕊️",
+    name: "Herald",
+    body: "Capture emails and grow an audience with newsletter and contact blocks that actually deliver.",
+  },
+  {
+    icon: "🌲",
+    name: "Arbor",
+    body: "Showcase your open-source repositories for developer portfolios and project pages.",
+  },
+  {
+    icon: "🖍️",
+    name: "Aura",
+    body: "Import your design tokens so every generated page matches your brand, not a generic template.",
+  },
+  {
+    icon: "🔷",
+    name: "Fractal",
+    body: "Ship to fast, secure hosting with custom domains, built on Omni's own deploy platform.",
+  },
+];
+
 /**
  * Keystone marketing landing. Full-bleed and branded via the design system
  * (brass primary ramp + Fraunces display from globals.css).
@@ -116,6 +149,42 @@ function LandingPage() {
               </p>
             </div>
           ))}
+        </section>
+
+        <section className="pb-20">
+          <div className="text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-base-200 bg-card px-3 py-1 text-muted-foreground text-xs">
+              Powered by the Omni ecosystem
+            </span>
+            <h2 className="mt-5 font-display font-semibold text-3xl tracking-tight sm:text-4xl">
+              Not just a page. A storefront, a mailing list, a home for your
+              work.
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground leading-relaxed">
+              Every Keystone site can weave in real, working pieces from across
+              Omni, wired up when you publish. No plugins, no code, no glue.
+            </p>
+          </div>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {ECOSYSTEM.map((e) => (
+              <div
+                key={e.name}
+                className="rounded-2xl border border-base-200 bg-card p-6"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl" aria-hidden="true">
+                    {e.icon}
+                  </span>
+                  <h3 className="font-display font-medium text-lg tracking-tight">
+                    {e.name}
+                  </h3>
+                </div>
+                <p className="mt-2.5 text-muted-foreground text-sm leading-relaxed">
+                  {e.body}
+                </p>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="rounded-3xl border border-base-200 bg-card px-8 py-14 text-center">
