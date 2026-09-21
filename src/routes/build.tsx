@@ -25,6 +25,12 @@ export const Route = createFileRoute("/build")({
 /** Keystone API base. Dev uses a locally-trusted cert; prod is the deployed API */
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "https://localhost:4000";
 
+/**
+ * Whether hosted publishing (live sites + custom domains) is available. Off
+ * until Arbor's git host opens; while off the builder offers preview links only.
+ */
+const HOSTED_ENABLED = import.meta.env.VITE_HOSTED_PUBLISH_ENABLED === "true";
+
 interface Page {
   html: string;
   css: string;
@@ -534,7 +540,24 @@ function BuildPage() {
               Publish your site
             </h2>
 
-            {!loggedIn ? (
+            {!HOSTED_ENABLED ? (
+              <>
+                <p className="mt-1.5 text-muted-foreground text-sm leading-relaxed">
+                  Share a read-only preview link now. Live hosted sites on your
+                  own domain arrive with Arbor, coming soon.
+                </p>
+                <div className="mt-5">
+                  <button
+                    type="button"
+                    className="rounded-md bg-primary-600 px-4 py-2.5 font-semibold text-primary-foreground text-sm transition-colors hover:bg-primary-700 disabled:opacity-40"
+                    onClick={publish}
+                    disabled={publishing}
+                  >
+                    {publishing ? "Publishing..." : "Get a preview link"}
+                  </button>
+                </div>
+              </>
+            ) : !loggedIn ? (
               <>
                 <p className="mt-1.5 text-muted-foreground text-sm leading-relaxed">
                   Publish a live, hosted site on your own domain with an Omni
@@ -632,7 +655,7 @@ function BuildPage() {
                 >
                   {publishedUrl.replace(/^https?:\/\//, "")}
                 </a>
-                {!publishedHosted && loggedIn && (
+                {!publishedHosted && loggedIn && HOSTED_ENABLED && (
                   <p className="mt-2 text-muted-foreground text-xs leading-relaxed">
                     This is a preview. Upgrade this workspace to a paid plan for
                     a live hosted site and custom domains.
