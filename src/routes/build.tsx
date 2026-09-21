@@ -86,7 +86,7 @@ function BuildPage() {
       .then((data) => setSiteId(data.siteId))
       .catch(() =>
         setError(
-          "Cannot reach the Keystone API. Open https://localhost:4000/health once to trust the certificate, then reload.",
+          "Couldn't reach Keystone just now. Please reload in a moment.",
         ),
       );
   }, []);
