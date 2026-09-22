@@ -48,12 +48,12 @@ interface TranscriptEntry {
 }
 
 const MODELS = [
-  { id: "claude-opus-5", label: "Opus 5" },
   { id: "claude-sonnet-5", label: "Sonnet 5" },
+  { id: "claude-opus-5", label: "Opus 5" },
   { id: "claude-haiku-4-5", label: "Haiku 4.5" },
 ];
 
-const DEFAULT_MODEL = MODELS[0]?.id ?? "claude-opus-5";
+const DEFAULT_MODEL = MODELS[0]?.id ?? "claude-sonnet-5";
 
 const EXAMPLES = [
   "A bold landing page for an artisanal coffee roaster with a hero, featured beans, and a newsletter signup",
