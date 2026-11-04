@@ -46,9 +46,13 @@ const FEATURES = [
 
 // `soon` mirrors the omni-api catalog: products not yet launched (status
 // coming_soon, or not yet public) render greyed with a "Coming soon" badge.
+// Each product is shown with its own logomark (vendored under
+// `public/img/ecosystem/`), not just its catalog emoji. `icon` is kept as the
+// image alt/fallback.
 const ECOSYSTEM = [
   {
     icon: "😇",
+    logo: "/img/ecosystem/halo.svg",
     name: "Halo",
     url: "https://halo.omni.dev",
     soon: true,
@@ -56,6 +60,7 @@ const ECOSYSTEM = [
   },
   {
     icon: "💎",
+    logo: "/img/ecosystem/crystal.svg",
     name: "Crystal",
     url: "https://crystal.omni.dev",
     soon: true,
@@ -63,6 +68,7 @@ const ECOSYSTEM = [
   },
   {
     icon: "🕊️",
+    logo: "/img/ecosystem/herald.svg",
     name: "Herald",
     url: "https://herald.omni.dev",
     soon: false,
@@ -70,6 +76,7 @@ const ECOSYSTEM = [
   },
   {
     icon: "🌲",
+    logo: "/img/ecosystem/arbor.svg",
     name: "Arbor",
     url: "https://arbor.omni.dev",
     soon: true,
@@ -77,6 +84,7 @@ const ECOSYSTEM = [
   },
   {
     icon: "🖍️",
+    logo: "/img/ecosystem/aura.svg",
     name: "Aura",
     url: "https://aura.omni.dev",
     soon: true,
@@ -84,6 +92,7 @@ const ECOSYSTEM = [
   },
   {
     icon: "🔷",
+    logo: "/img/ecosystem/fractal.svg",
     name: "Fractal",
     url: "https://fractal.omni.dev",
     soon: false,
@@ -191,9 +200,14 @@ function LandingPage() {
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="text-2xl" aria-hidden="true">
-                    {e.icon}
-                  </span>
+                  <img
+                    src={e.logo}
+                    alt={`${e.name} logo`}
+                    width={28}
+                    height={28}
+                    loading="lazy"
+                    className="h-7 w-7 shrink-0 object-contain"
+                  />
                   <h3 className="font-display font-medium text-lg tracking-tight">
                     {e.name}
                   </h3>
