@@ -22,63 +22,65 @@ import type { OrganizationClaim } from "@omnidotdev/providers/auth";
  * Fetch the current user session.
  * Returns session with user info if authenticated, null otherwise.
  */
-export const fetchSession = createServerFn().handler(async () => {
-  const headers = getRequestHeaders();
-  const session = await auth.api.getSession({ headers });
+export const fetchSession = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const headers = getRequestHeaders();
+    const session = await auth.api.getSession({ headers });
 
-  if (!session) return { session: null };
+    if (!session) return { session: null };
 
-  // Get access token and identity provider ID for downstream use
-  let accessToken: string | undefined;
-  let identityProviderId: string | undefined;
+    // Get access token and identity provider ID for downstream use
+    let accessToken: string | undefined;
+    let identityProviderId: string | undefined;
 
-  try {
-    const tokenResult = await ensureFreshAccessToken({
-      getAccessToken: () =>
-        auth.api.getAccessToken({
-          body: { useAccountCookie: true },
-          headers,
-        }),
-      refreshToken: () =>
-        auth.api.refreshToken({
-          body: { useAccountCookie: true },
-          headers,
-        }),
-    });
-    accessToken = tokenResult?.accessToken;
+    try {
+      const tokenResult = await ensureFreshAccessToken({
+        getAccessToken: () =>
+          auth.api.getAccessToken({
+            body: { useAccountCookie: true },
+            headers,
+          }),
+        refreshToken: () =>
+          auth.api.refreshToken({
+            body: { useAccountCookie: true },
+            headers,
+          }),
+      });
+      accessToken = tokenResult?.accessToken;
 
-    // Decode identity claims from the ID token — signature was already
-    // verified during the OAuth flow; the token is retrieved from our
-    // own trusted auth storage so re-verification is unnecessary
-    if (tokenResult?.idToken) {
-      const payload = decodeJwt(tokenResult.idToken);
-      identityProviderId = payload.sub;
-    }
-  } catch (err) {
-    console.error("[fetchSession] Error getting access token:", err);
-
-    if (isInvalidGrant(err)) {
-      console.warn("[fetchSession] Invalid refresh token, clearing session");
-      try {
-        await auth.api.signOut({ headers });
-      } catch {
-        // Sign-out may fail if session is already corrupt
+      // Decode identity claims from the ID token — signature was already
+      // verified during the OAuth flow; the token is retrieved from our
+      // own trusted auth storage so re-verification is unnecessary
+      if (tokenResult?.idToken) {
+        const payload = decodeJwt(tokenResult.idToken);
+        identityProviderId = payload.sub;
       }
-      return { session: null };
-    }
-  }
+    } catch (err) {
+      console.error("[fetchSession] Error getting access token:", err);
 
-  return {
-    session: {
-      ...session,
-      accessToken,
-      user: {
-        ...session.user,
-        identityProviderId,
+      if (isInvalidGrant(err)) {
+        console.warn("[fetchSession] Invalid refresh token, clearing session");
+        try {
+          await auth.api.signOut({ headers });
+        } catch {
+          // Sign-out may fail if session is already corrupt
+        }
+        return { session: null };
+      }
+    }
+
+    return {
+      session: {
+        ...session,
+        accessToken,
+        user: {
+          ...session.user,
+          identityProviderId,
+        },
       },
-    },
-  };
-});
+    };
+  },
+);
 
 /**
  * Sign out and redirect to home page.
@@ -139,7 +141,7 @@ export const signOutLocal = createServerFn({ method: "POST" }).handler(
  * Get user organizations from IDP token claims.
  * Returns an empty array if unauthenticated or no claims are present.
  */
-export const getUserOrganizations = createServerFn().handler(
+export const getUserOrganizations = createServerFn({ method: "POST" }).handler(
   async (): Promise<OrganizationClaim[]> => {
     const headers = getRequestHeaders();
     const session = await auth.api.getSession({ headers });

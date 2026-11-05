@@ -23,7 +23,7 @@ const getOrganizationBySlugSchema = z.object({
  * Get an organization by slug.
  * Used when JWT claims are stale and don't include a newly created org
  */
-export const getOrganizationBySlug = createServerFn({ method: "GET" })
+export const getOrganizationBySlug = createServerFn({ method: "POST" })
   .inputValidator((data) => getOrganizationBySlugSchema.parse(data))
   .middleware([authMiddleware])
   .handler(async ({ data, context }) => {
@@ -40,7 +40,7 @@ export const getOrganizationBySlug = createServerFn({ method: "GET" })
  * Fetch an organization by slug without authentication.
  * Used for public access when no JWT is available
  */
-export const fetchOrganizationBySlug = createServerFn()
+export const fetchOrganizationBySlug = createServerFn({ method: "POST" })
   .inputValidator((data) => getOrganizationBySlugSchema.parse(data))
   .handler(async ({ data }) => {
     try {
