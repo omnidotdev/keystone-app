@@ -32,7 +32,7 @@ import { getThemeServerFn } from "@/server/functions/theme";
 import type { QueryClient } from "@tanstack/react-query";
 import type { PropsWithChildren } from "react";
 
-const fetchSession = createServerFn().handler(async () => {
+const fetchSession = createServerFn({ method: "POST" }).handler(async () => {
   const headers = getRequestHeaders();
 
   return await auth.api.getSession({ headers });
